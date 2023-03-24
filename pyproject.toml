@@ -29,6 +29,10 @@ torch = [
     { markers = "platform_machine == 'x86_64'", url = "https://download.pytorch.org/whl/cu118/torch-2.0.0%2Bcu118-cp310-cp310-linux_x86_64.whl" },
     { markers = "platform_machine == 'arm64'", version = "2.0.0" }
 ]
+transformers = "^4.27.3"
+torchtext = "^0.15.1"
+lightning = "^2.0.0"
+torchmetrics = "^0.11.4"
 
 [build-system]
 requires = ["poetry-core"]
