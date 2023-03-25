@@ -25,7 +25,7 @@ class BertPreprocessor(TextPreprocessor[BatchEncoding]):
 
         # 94 chrs, media 120chr - 20 mean toks
         self.tokenizer = AutoTokenizer.from_pretrained(repo)
-        self.max_length = 256 # TODO: adjust this?
+        self.max_length = 128 # TODO: adjust this?
 
     def __call__(self, dataset: DataFrame) -> BatchEncoding:
         # Manual preprocessing
