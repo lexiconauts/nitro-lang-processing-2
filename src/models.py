@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
+from torch.nn import GELU
 from transformers import AutoModel
 from transformers import BertModel
 from typing import Dict, List, Set, Tuple, Literal
@@ -21,7 +22,9 @@ class BertFlatClassModel(nn.Module):
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
-            nn.Linear(in_features=768, out_features=self.n_classes)
+            nn.Linear(in_features=768, out_features=768),
+            nn.GELU(),
+            nn.Linear(in_features=768, out_features=self.n_classes),
         )
 
     def unfreeze(self, layers: str | List[str], unfreeze: bool = True) -> None:

@@ -24,6 +24,7 @@ class SexismDataset(Dataset):
             'non-offensive': 3,
             'offensive': 4,
         }
+        self.class_to_label: Dict[int, str] = { v: k for k, v in self.label_to_class.items() }
 
     def preprocess(self) -> BatchEncoding:
         return self.processor(self.dataset_raw)
@@ -37,13 +38,13 @@ class SexismDataset(Dataset):
         output['attention_mask'] = attention_mask[key]
         output['input_ids'] = input_ids[key]
 
-        # Add optional labels
-        if isinstance(key, (int, np.int64, np.int32)):
-            output['label'] = self.label_to_class[self.dataset_raw['label'][key]]
-            output['label'] = torch.tensor(output['label'])
-        else:
-            output['label'] = self.dataset_raw['label'].iloc[key].map(self.label_to_class)
-            output['label'] = torch.tensor(output['label'].tolist())
+        if self.has_labels:
+            if isinstance(key, (int, np.int64, np.int32)):
+                output['label'] = self.label_to_class[self.dataset_raw['label'][key]]
+                output['label'] = torch.tensor(output['label'])
+            else:
+                output['label'] = self.dataset_raw['label'].iloc[key].map(self.label_to_class)
+                output['label'] = torch.tensor(output['label'].tolist())
 
         # Batched output
         return output
