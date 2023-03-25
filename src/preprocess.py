@@ -31,7 +31,11 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         self.tokenizer = AutoTokenizer.from_pretrained(self.repo)
         self.max_length: int = max_length
 
-    def __call__(self, dataset: DataFrame) -> BatchEncoding:
+    def __call__(self, dataset: DataFrame) -> (DataFrame, BatchEncoding):
+        # Remove bad examples
+        dataset = dataset.drop(
+            dataset[dataset['text'].str.contains('\t')].index)
+
         # Manual preprocessing
         sentences: List[str] = []
         for text in dataset['text'].tolist():
@@ -43,7 +47,7 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
             sentences.append(text)
 
         # Retrieve max-length
-        return self.tokenizer.__call__(
+        return dataset, self.tokenizer.__call__(
             sentences,
             add_special_tokens=True,
             padding='max_length',
@@ -77,4 +81,3 @@ class RobertaPreprocessor(BERTPreprocessor):
 
 def remove_by_regex(df: DataFrame, column: str, regex: str) -> None:
     df[column] = df[column].str.replace(regex, '', regex=True)
-
