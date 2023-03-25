@@ -1,8 +1,15 @@
 import torch
+from torch import nn, Tensor
 from torch.utils.data import DataLoader
+from typing import List, Dict
+import numpy as np
+from sklearn.metrics import balanced_accuracy_score
+
+from models import Output
+from data import SexismDataset
 
 
-def evaluate(model: nn.Module, loss_fn: nn.Module, data_loader: DataLoader, with_labels: bool = True) -> Output:
+def evaluate(model: nn.Module, loss_fn: nn.Module, data_loader: DataLoader, with_labels: bool = True, device: torch.device = torch.device('cpu')) -> Output:
     model.eval()
     with torch.no_grad():
         epoch_loss: List[float] = []
@@ -12,7 +19,7 @@ def evaluate(model: nn.Module, loss_fn: nn.Module, data_loader: DataLoader, with
         # Single pass through the data
         for _, batch in enumerate(data_loader):
             # Send batch to GPU
-            batch: Dict[str, Tensor] = { k: v.to(DEVICE) for k, v in batch.items() }
+            batch: Dict[str, Tensor] = { k: v.to(device) for k, v in batch.items() }
 
             # Make predictions
             y_pred: Tensor | np.ndarray = model.forward(batch)

@@ -4,7 +4,7 @@ from torch import Tensor
 from pandas import Series, DataFrame
 from transformers import AutoTokenizer, BatchEncoding, T5Tokenizer
 import typing
-from typing import List, Set, Dict, TypeVar, Generic, Optional
+from typing import List, Set, Dict, TypeVar, Generic, Optional, Tuple
 
 
 PT = TypeVar('PT')
@@ -14,8 +14,8 @@ TWITTER_HANDLE_REGEX = '@[a-zA-Z0-9_-]+'
 
 
 class TextPreprocessor(ABC, Generic[PT]):
-    def __init__(self, dataset: Optional[DataFrame] = None) -> None:
-        self.dataset = dataset
+    def __init__(self) -> None:
+        pass
 
     @abstractmethod
     def __call__(dataset: DataFrame) -> PT:
@@ -23,15 +23,17 @@ class TextPreprocessor(ABC, Generic[PT]):
 
 
 class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
-    def __init__(self, repo: str, max_length: int = 32, dataset: Optional[DataFrame] = None) -> None:
-        super().__init__(dataset)
+    def __init__(self, repo: str, max_length: int = 32) -> None:
+        super().__init__()
 
         # Initializer internals
         self.repo: str = repo
         self.tokenizer = AutoTokenizer.from_pretrained(self.repo)
         self.max_length: int = max_length
 
-    def __call__(self, dataset: DataFrame) -> (DataFrame, BatchEncoding):
+    def __call__(self, dataset: DataFrame) -> Tuple[DataFrame, BatchEncoding]:
+        x = dataset
+        
         # Remove bad examples
         dataset = dataset.drop(
             dataset[dataset['text'].str.contains('\t')].index)
@@ -59,23 +61,20 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
 
 
 class BERTPreprocessor(AutoPreprocessor):
-    def __init__(self, dataset: Optional[DataFrame] = None, *args, **kwargs) -> None:
-        super().__init__(dataset=dataset,
-                         repo='dumitrescustefan/bert-base-romanian-cased-v1',
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(repo='dumitrescustefan/bert-base-romanian-cased-v1',
                          *args, **kwargs)
 
 
 class MT5Preprocessor(BERTPreprocessor):
-    def __init__(self, dataset: Optional[DataFrame] = None, *args, **kwargs) -> None:
-        super().__init__(dataset,
-                         repo='dumitrescustefan/mt5-large-romanian',
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(repo='dumitrescustefan/mt5-large-romanian',
                          *args, **kwargs)
 
 
 class RobertaPreprocessor(BERTPreprocessor):
-    def __init__(self, dataset: Optional[DataFrame] = None, *args, **kwargs) -> None:
-        super().__init__(dataset=dataset,
-                         repo='readerbench/RoBERT-base',
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(repo='readerbench/RoBERT-base',
                          *args, **kwargs)
 
 

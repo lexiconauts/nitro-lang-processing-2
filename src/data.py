@@ -18,8 +18,7 @@ class SexismDataset(Dataset):
         self.processor: TextPreprocessor[BatchEncoding] = processor
 
         # Keep a reference to the original dataset and the tokenized text
-        self.dataset_pro, self.preprocessed_text = self.processor(
-            self.dataset_pro)
+        self.dataset_pro, self.preprocessed_text = self.processor(dataset)
 
         # Add labels to the dataset if they exist along with mappings
         self.__use_labels()
