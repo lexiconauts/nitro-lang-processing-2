@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 from torch import Tensor
 from typing import Dict, List, Tuple, Set
 import pandas as pd
+import numpy as np
 from transformers import BatchEncoding
 
 
@@ -37,13 +38,11 @@ class SexismDataset(Dataset):
         output['input_ids'] = input_ids[key]
 
         # Add optional labels
-        if self.has_labels:
-            if isinstance(key, int):
-                output['label'] = self.label_to_class[self.dataset_raw['label'][key]]
-            else:
-                output['label'] = self.dataset_raw['label'].iloc[key].map(self.label_to_class)
-
-            # Transform to tensor
+        if isinstance(key, (int, np.int64, np.int32)):
+            output['label'] = self.label_to_class[self.dataset_raw['label'][key]]
+            output['label'] = torch.tensor(output['label'])
+        else:
+            output['label'] = self.dataset_raw['label'].iloc[key].map(self.label_to_class)
             output['label'] = torch.tensor(output['label'].tolist())
 
         # Batched output
