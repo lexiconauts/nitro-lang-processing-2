@@ -2,7 +2,7 @@ import torch
 from torch import nn, Tensor
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
-from typing import List, Dict
+from typing import List, Dict, Callable, Tuple, Optional
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 
@@ -10,7 +10,7 @@ from models import Output, Args
 from data import SexismDataset
 
 
-def train(model: nn.Module, optimizer: Optimizer, loss_fn: nn.Module, data_loader: DataLoader, class_to_label: Dict[int, str], args: Args, device: torch.device = torch.device('cpu')) -> Output:
+def train(model: nn.Module, optimizer: Optimizer, loss_fn: nn.Module, data_loader: DataLoader, class_to_label: Dict[int, str], args: Args, device: torch.device = torch.device('cpu'), valid_callback: Optional[Callable[[], None]] = None) -> Output:
     for epoch in range(args.num_epochs):
         model.train()
         epoch_loss: List[float] = []
@@ -43,6 +43,10 @@ def train(model: nn.Module, optimizer: Optimizer, loss_fn: nn.Module, data_loade
         # Track progress over each epoch
         output = Output(predictions, epoch_loss, epoch_accy, class_to_label=class_to_label, with_labels=True)
         print('Train Epoch {} - Loss: {}, Accuracy: {}'.format(epoch, output.loss_mean, output.accy_mean))
+
+        # Call Evaluation overValidation
+        if valid_callback:
+            valid_callback()
 
     # Retain and expose output
     return output

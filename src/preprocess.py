@@ -11,6 +11,7 @@ PT = TypeVar('PT')
 
 URL_REGEX = "https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
 TWITTER_HANDLE_REGEX = '@[a-zA-Z0-9_-]+'
+NUMBER_REGEX = r"\d+"
 
 
 class TextPreprocessor(ABC, Generic[PT]):
@@ -23,7 +24,7 @@ class TextPreprocessor(ABC, Generic[PT]):
 
 
 class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
-    def __init__(self, repo: str, max_length: int = 32) -> None:
+    def __init__(self, repo: str, max_length: int = 64) -> None:
         super().__init__()
 
         # Initializer internals
@@ -36,6 +37,11 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         dataset = dataset.drop(
             dataset[dataset['text'].str.contains('\t')].index)
         dataset = dataset.reset_index()
+
+        # Remove twitter handles
+        dataset['text'] = dataset['text'].str.replace(URL_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(TWITTER_HANDLE_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(NUMBER_REGEX, ' ', regex=True)
 
         # Manual preprocessing
         sentences: List[str] = []
@@ -65,13 +71,13 @@ class BERTPreprocessor(AutoPreprocessor):
                          *args, **kwargs)
 
 
-class MT5Preprocessor(BERTPreprocessor):
+class MT5Preprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(repo='dumitrescustefan/mt5-large-romanian',
                          *args, **kwargs)
 
 
-class RobertaPreprocessor(BERTPreprocessor):
+class RobertaPreprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(repo='readerbench/RoBERT-base',
                          *args, **kwargs)
