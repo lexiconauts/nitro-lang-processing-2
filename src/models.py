@@ -20,13 +20,15 @@ class Args(object):
 
 
 class Output(object):
-    def __init__(self, predictions: List[int], loss_seq: List[float], accy_seq: List[float], class_to_label: Dict[int, str]) -> None:
+    def __init__(self, predictions: List[int], loss_seq: List[float], accy_seq: List[float], class_to_label: Dict[int, str], with_labels: bool) -> None:
         self.predictions_as_indx: np.ndarray = np.array(predictions)
         self.predictions_as_text: np.ndarray = np.vectorize(class_to_label.get)(self.predictions_as_indx)
-        self.loss_seq: np.ndarray = np.array(loss_seq)
-        self.accy_seq: np.ndarray = np.array(accy_seq)
-        self.loss_mean: float = self.loss_seq.mean()
-        self.accy_mean: float = self.accy_seq.mean()
+        self.with_labels: bool = with_labels
+        if self.with_labels:
+            self.loss_seq: np.ndarray = np.array(loss_seq)
+            self.accy_seq: np.ndarray = np.array(accy_seq)
+            self.loss_mean: float = self.loss_seq.mean()
+            self.accy_mean: float = self.accy_seq.mean()
 
 
 class PretrainedFlatClassModel(ABC, nn.Module):

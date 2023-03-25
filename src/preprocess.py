@@ -32,11 +32,10 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         self.max_length: int = max_length
 
     def __call__(self, dataset: DataFrame) -> Tuple[DataFrame, BatchEncoding]:
-        x = dataset
-        
         # Remove bad examples
         dataset = dataset.drop(
             dataset[dataset['text'].str.contains('\t')].index)
+        dataset = dataset.reset_index()
 
         # Manual preprocessing
         sentences: List[str] = []

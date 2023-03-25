@@ -51,7 +51,7 @@ class SexismDataset(Dataset):
 
     def __use_labels(self, ) -> None:
         # Check for label existance
-        self.has_labels = 'label' in self.dataset_pro.columns
+        self.has_labels: bool = 'label' in self.dataset_pro.columns
 
         if not self.has_labels:
             return
