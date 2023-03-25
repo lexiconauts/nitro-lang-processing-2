@@ -41,7 +41,7 @@ class SexismDataset(Dataset):
             if isinstance(key, int):
                 output['label'] = self.label_to_class[self.dataset_raw['label'][key]]
             else:
-                output['label'] = self.dataset_raw['label'].map(self.label_to_class)
+                output['label'] = self.dataset_raw['label'].iloc[key].map(self.label_to_class)
 
             # Transform to tensor
             output['label'] = torch.tensor(output['label'].tolist())
