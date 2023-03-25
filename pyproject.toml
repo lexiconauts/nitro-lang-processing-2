@@ -25,14 +25,12 @@ sacremoses = "^0.0.53"
 ipykernel = "^6.22.0"
 autopep8 = "^2.0.2"
 nvitop = "^1.0.0"
-torch = [
-    { markers = "platform_machine == 'x86_64'", url = "https://download.pytorch.org/whl/cu118/torch-2.0.0%2Bcu118-cp310-cp310-linux_x86_64.whl" },
-    { markers = "platform_machine == 'arm64'", version = "2.0.0" }
-]
+torch = "2.0.0"
 transformers = "^4.27.3"
 torchtext = "^0.15.1"
 lightning = "^2.0.0"
 torchmetrics = "^0.11.4"
+tokenizers = "^0.13.2"
 
 [build-system]
 requires = ["poetry-core"]
