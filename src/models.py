@@ -42,7 +42,7 @@ class BertFlatClassModel(nn.Module):
         attention_mask = x['attention_mask']
 
         # Call the pretrained model
-        _, output = self.bert_model(input_ids, attention_mask)
+        _, output = self.bert_model(input_ids, attention_mask, return_dict=False)
 
         # Add layers over it
         output = self.layers(output)
