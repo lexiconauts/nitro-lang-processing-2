@@ -17,14 +17,16 @@ class SexismDataset(Dataset):
         self.dataset_raw = dataset
         self.preprocessed_text = self.preprocess()
         self.has_labels = 'label' in dataset.columns
-        self.label_to_class: Dict[str, int] = {
-            'direct': 0,
-            'descriptive': 1,
-            'reporting': 2,
-            'non-offensive': 3,
-            'offensive': 4,
-        }
-        self.class_to_label: Dict[int, str] = { v: k for k, v in self.label_to_class.items() }
+        if self.has_labels:
+            self.label_to_class: Dict[str, int] = {
+                'direct': 0,
+                'descriptive': 1,
+                'reporting': 2,
+                'non-offensive': 3,
+                'offensive': 4,
+            }
+            self.class_to_label: Dict[int, str] = { v: k for k, v in self.label_to_class.items() }
+            self.classes = np.vectorize(self.label_to_class.get)(self.dataset_raw['label'])
 
     def preprocess(self) -> BatchEncoding:
         return self.processor(self.dataset_raw)
