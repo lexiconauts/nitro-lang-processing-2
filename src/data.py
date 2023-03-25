@@ -27,6 +27,8 @@ class SexismDataset(Dataset):
             }
             self.class_to_label: Dict[int, str] = { v: k for k, v in self.label_to_class.items() }
             self.classes = np.vectorize(self.label_to_class.get)(self.dataset_raw['label'])
+            self.freq_count = torch.from_numpy(np.unique(self.classes, return_counts=True)[1])
+            self.weights = 1 - self.freq_count / self.freq_count.sum()
 
     def preprocess(self) -> BatchEncoding:
         return self.processor(self.dataset_raw)
