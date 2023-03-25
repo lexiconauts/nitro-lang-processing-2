@@ -10,9 +10,13 @@ from typing import Dict, List, Set, Tuple, Literal
 class BertFlatClassModel(nn.Module):
     def __init__(self,
                  repo: str,
+                 dropout: float = 0.3,
                  unfreeze: Literal['all'] | Literal['none'] | List[str] = 'none',
                  *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+        # Save internal params
+        self.dropout: float = dropout
 
         # Init the base model
         self.n_classes = 5
@@ -22,8 +26,11 @@ class BertFlatClassModel(nn.Module):
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
+            nn.Dropout(p=self.dropout),
             nn.Linear(in_features=768, out_features=768),
+            nn.LayerNorm((768,), eps=1e-12, elementwise_affine=True),
             nn.GELU(),
+            nn.Dropout(p=self.dropout),
             nn.Linear(in_features=768, out_features=self.n_classes),
         )
 
