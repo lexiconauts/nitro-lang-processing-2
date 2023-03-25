@@ -3,6 +3,7 @@ from typing import Tuple
 import pathlib as pb
 import pandas as pd
 
+
 def get_available_device() -> torch.device:
     # Use available GPU
     device: torch.device
@@ -28,3 +29,10 @@ def read_data(data_dir: pb.Path, train_filename: str = 'train_data.csv', test_fi
 
     return train_data_raw, test_data_raw
 
+
+def silence_warnings() -> None:
+    # Shutup Scikit-Learn Warnings
+    def warn(*args, **kwargs) -> None:
+        pass
+    import warnings
+    warnings.warn = warn
