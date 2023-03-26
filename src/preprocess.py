@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from torch import Tensor
 from pandas import Series, DataFrame
-from transformers import AutoTokenizer, BatchEncoding, T5Tokenizer
+from transformers import AutoTokenizer, BatchEncoding
 import typing
 from typing import List, Set, Dict, TypeVar, Generic, Optional, Tuple
 
@@ -40,9 +40,12 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         dataset = dataset.reset_index()
 
         # Remove twitter handles
-        dataset['text'] = dataset['text'].str.replace(URL_REGEX, ' ', regex=True)
-        dataset['text'] = dataset['text'].str.replace(TWITTER_HANDLE_REGEX, ' ', regex=True)
-        dataset['text'] = dataset['text'].str.replace(NUMBER_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            URL_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            TWITTER_HANDLE_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            NUMBER_REGEX, ' ', regex=True)
 
         if not self.cased:
             dataset['text'] = dataset['text'].str.lower()
@@ -77,7 +80,7 @@ class BERTPreprocessor(AutoPreprocessor):
 
 class MT5Preprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(repo='dumitrescustefan/mt5-large-romanian',
+        super().__init__(repo='dumitrescustefan/mt5-base-romanian',
                          *args, **kwargs)
 
 

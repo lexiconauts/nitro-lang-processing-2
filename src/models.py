@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn import GELU
-from transformers import AutoModel, BertModel, MT5Model, T5Tokenizer
+from transformers import AutoModel, BertModel, MT5Model, MT5EncoderModel, T5Tokenizer
 from typing import Dict, List, Set, Tuple, Literal
 import abc
 from abc import ABC, abstractmethod
@@ -22,7 +22,8 @@ class Args(object):
 class Output(object):
     def __init__(self, predictions: List[int], loss_seq: List[float], accy_seq: List[float], class_to_label: Dict[int, str], with_labels: bool) -> None:
         self.predictions_as_indx: np.ndarray = np.array(predictions)
-        self.predictions_as_text: np.ndarray = np.vectorize(class_to_label.get)(self.predictions_as_indx)
+        self.predictions_as_text: np.ndarray = np.vectorize(
+            class_to_label.get)(self.predictions_as_indx)
         self.with_labels: bool = with_labels
         if self.with_labels:
             self.loss_seq: np.ndarray = np.array(loss_seq)
@@ -62,38 +63,38 @@ class MT5FlatClassModel(PretrainedFlatClassModel):
     def __init__(self, unfreeze: Literal['all'] | Literal['none'] | List[str] = 'none', *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        # Initialization
-        self.n_classes = 5
-        self.repo = 'dumitrescustefan/mt5-base-romanian'
-        self.mt5_model: MT5Model = MT5Model.from_pretrained(self.repo)
-        self.unfreeze([
-            self.mt5_model.decoder.final_layer_norm,
-            self.mt5_model.decoder.block[-5:],
-        ])
-        self.create_layers()
+        self.fc_head = torch.nn.Linear(40 * 768, 5)
+        self.mt5: MT5Model = MT5EncoderModel.from_pretrained(
+            "dumitrescustefan/mt5-base-romanian")
 
-    def create_layers(self) -> None:
-        self.layers = nn.Sequential(
-            nn.Linear(in_features=768, out_features=512),
-            nn.GELU(),
-            nn.Linear(in_features=512, out_features=self.n_classes)
-        )
+        self.unfreeze([
+            self.mt5.encoder.block[10].layer[0].SelfAttention.q.weight,
+            self.mt5.encoder.block[10].layer[0].SelfAttention.k.weight,
+            self.mt5.encoder.block[10].layer[0].SelfAttention.v.weight,
+            self.mt5.encoder.block[10].layer[0].SelfAttention.o.weight,
+            self.mt5.encoder.block[10].layer[0].layer_norm.weight,
+            self.mt5.encoder.block[10].layer[1].DenseReluDense.wi_0.weight,
+            self.mt5.encoder.block[10].layer[1].DenseReluDense.wi_1.weight,
+            self.mt5.encoder.block[10].layer[1].DenseReluDense.wo.weight,
+            self.mt5.encoder.block[10].layer[1].layer_norm.weight,
+            self.mt5.encoder.block[11].layer[0].SelfAttention.q.weight,
+            self.mt5.encoder.block[11].layer[0].SelfAttention.k.weight,
+            self.mt5.encoder.block[11].layer[0].SelfAttention.v.weight,
+            self.mt5.encoder.block[11].layer[0].SelfAttention.o.weight,
+            self.mt5.encoder.block[11].layer[0].layer_norm.weight,
+            self.mt5.encoder.block[11].layer[1].DenseReluDense.wi_0.weight,
+            self.mt5.encoder.block[11].layer[1].DenseReluDense.wi_1.weight,
+            self.mt5.encoder.block[11].layer[1].DenseReluDense.wo.weight,
+            self.mt5.encoder.block[11].layer[1].layer_norm.weight,
+            self.mt5.encoder.final_layer_norm.weight
+        ])
 
     def forward(self, x: Dict[str, Tensor]) -> Tensor:
-        # Extract the relevant data
-        input_ids: Tensor = x['input_ids']
-        attention_mask: Tensor = x['attention_mask']
-
-        # Call the pretrained model
-        output = self.mt5_model(input_ids, attention_mask, decoder_input_ids=input_ids, return_dict=False)
-
-        # Apply average over the sequence dimension
-        output = torch.mean(output[0], dim=1)
-
-        # Add layers over it
-        output = self.layers(output)
-
-        return output
+        y = self.mt5(
+            input_ids=x['input_ids'], attention_mask=x['attention_mask']).last_hidden_state
+        y = y.view(y.shape[0], -1)
+        y = self.fc_head(y)
+        return y
 
 
 class BertFlatClassModel(PretrainedFlatClassModel):
@@ -128,7 +129,8 @@ class BertFlatClassModel(PretrainedFlatClassModel):
         attention_mask: Tensor = x['attention_mask']
 
         # Call the pretrained model
-        _, output = self.bert_model(input_ids, attention_mask, return_dict=False)
+        _, output = self.bert_model(
+            input_ids, attention_mask, return_dict=False)
 
         # Add layers over it
         output = self.layers(output)
@@ -167,7 +169,8 @@ class RoBertFlatClassModel(PretrainedFlatClassModel):
         attention_mask: Tensor = x['attention_mask']
 
         # Call the pretrained model
-        _, output = self.bert_model(input_ids, attention_mask, return_dict=False)
+        _, output = self.bert_model(
+            input_ids, attention_mask, return_dict=False)
 
         # Add layers over it
         output = self.layers(output)
@@ -183,7 +186,7 @@ class Ensemble(nn.Module):
         self.models = models
 
     def forward(self, x: Dict[str, Tensor]) -> Tensor:
-        y_hats = [] # 32xMx5
+        y_hats = []  # 32xMx5
 
         for model in self.models:
             y_hat = model.forward(x).detach().cpu()
@@ -191,5 +194,4 @@ class Ensemble(nn.Module):
 
         stacked = torch.stack(y_hats, dim=1)
         predictions = torch.sum(stacked, dim=1)
-        return predictions # , torch.softmax(predictions, dim=1)
-
+        return predictions  # , torch.softmax(predictions, dim=1)
