@@ -12,11 +12,11 @@ import numpy as np
 class Args(object):
     def __init__(self) -> None:
         # Training specifications
-        self.num_epochs = 3
+        self.num_epochs = 2
         self.num_workers = 1
-        self.batch_size = 32
-        self.weight_decay = 5e-6
-        self.learning_rate = 2e-5
+        self.batch_size = 64
+        self.weight_decay = 1e-7
+        self.learning_rate = 1e-5
 
 
 class Output(object):
@@ -117,6 +117,7 @@ class BertFlatClassModel(PretrainedFlatClassModel):
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
+            nn.Dropout(p=0.1),
             nn.Linear(in_features=768, out_features=512),
             nn.GELU(),
             nn.Linear(in_features=512, out_features=self.n_classes)
