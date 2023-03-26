@@ -12,11 +12,11 @@ import numpy as np
 class Args(object):
     def __init__(self) -> None:
         # Training specifications
-        self.num_epochs = 20
+        self.num_epochs = 3
         self.num_workers = 1
         self.batch_size = 32
-        self.weight_decay = 5e-4
-        self.learning_rate = 5e-5
+        self.weight_decay = 5e-6
+        self.learning_rate = 2e-5
 
 
 class Output(object):
@@ -39,8 +39,12 @@ class PretrainedFlatClassModel(ABC, nn.Module):
     def create_layers(self) -> nn.Sequential:
         raise NotImplementedError()
 
-    def unfreeze(self, layers: str | List[str] | List[int], unfreeze: bool = True) -> None:
-        if layers == 'all':
+    def unfreeze(self, layers: str | List[str] | List[nn.Module], unfreeze: bool = True) -> None:
+        if isinstance(layers, list) and isinstance(layers[0], nn.Module):
+            for module in layers:
+                for param in module.parameters():
+                    param.requires_grad = unfreeze
+        elif layers == 'all':
             for param in self.parameters():
                 param.requires_grad = unfreeze
         elif layers == 'none':
@@ -67,14 +71,6 @@ class MT5FlatClassModel(PretrainedFlatClassModel):
             self.mt5_model.decoder.block[-5:],
         ])
         self.create_layers()
-
-    def unfreeze(self, layers: str | List[str] | List[nn.Module], unfreeze: bool = True) -> None:
-        if isinstance(layers, list) and isinstance(layers[0], nn.Module):
-            for module in layers:
-                for param in module.parameters():
-                    param.requires_grad = unfreeze
-        else:
-            super().unfreeze(layers, unfreeze)
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
@@ -103,7 +99,6 @@ class MT5FlatClassModel(PretrainedFlatClassModel):
 class BertFlatClassModel(PretrainedFlatClassModel):
     def __init__(self,
                  dropout: float = 0.1,
-                 unfreeze: Literal['all'] | Literal['none'] | List[str] = 'none',
                  *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -114,17 +109,17 @@ class BertFlatClassModel(PretrainedFlatClassModel):
         self.n_classes = 5
         self.repo = 'dumitrescustefan/bert-base-romanian-cased-v1'
         self.bert_model: BertModel = AutoModel.from_pretrained(self.repo)
-        self.unfreeze(unfreeze)
+        self.unfreeze([
+            self.bert_model.pooler.dense,
+            self.bert_model.encoder.layer[-1:]
+        ])
         self.create_layers()
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
-            nn.Dropout(p=self.dropout),
-            nn.Linear(in_features=768, out_features=768),
-            nn.LayerNorm((768,), eps=1e-12, elementwise_affine=True),
+            nn.Linear(in_features=768, out_features=512),
             nn.GELU(),
-            nn.Dropout(p=self.dropout),
-            nn.Linear(in_features=768, out_features=self.n_classes),
+            nn.Linear(in_features=512, out_features=self.n_classes)
         )
 
     def forward(self, x: Dict[str, Tensor]) -> Tensor:
@@ -139,4 +134,61 @@ class BertFlatClassModel(PretrainedFlatClassModel):
         output = self.layers(output)
 
         return output
+
+
+class RoBertFlatClassModel(PretrainedFlatClassModel):
+    def __init__(self,
+                 dropout: float = 0.1,
+                 *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        # Save internal params
+        self.dropout: float = dropout
+
+        # Init the base model
+        self.n_classes = 5
+        self.repo = 'readerbench/RoBERT-base'
+        self.bert_model: BertModel = AutoModel.from_pretrained(self.repo)
+        self.unfreeze([
+            self.bert_model.pooler.dense,
+            self.bert_model.encoder.layer[-1:]
+        ])
+        self.create_layers()
+
+    def create_layers(self) -> None:
+        self.layers = nn.Sequential(
+            nn.Linear(in_features=768, out_features=self.n_classes)
+        )
+
+    def forward(self, x: Dict[str, Tensor]) -> Tensor:
+        # Extract the relevant data
+        input_ids: Tensor = x['input_ids']
+        attention_mask: Tensor = x['attention_mask']
+
+        # Call the pretrained model
+        _, output = self.bert_model(input_ids, attention_mask, return_dict=False)
+
+        # Add layers over it
+        output = self.layers(output)
+
+        return output
+
+
+class Ensemble(nn.Module):
+    def __init__(self, models: List[nn.Module], *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        # Init models
+        self.models = models
+
+    def forward(self, x: Dict[str, Tensor]) -> Tensor:
+        y_hats = [] # 32xMx5
+
+        for model in self.models:
+            y_hat = model.forward(x).detach().cpu()
+            y_hats.append(y_hat)
+
+        stacked = torch.stack(y_hats, dim=1)
+        predictions = torch.sum(stacked, dim=1)
+        return predictions # , torch.softmax(predictions, dim=1)
 

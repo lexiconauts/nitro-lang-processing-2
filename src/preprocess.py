@@ -77,7 +77,7 @@ class MT5Preprocessor(AutoPreprocessor):
                          *args, **kwargs)
 
 
-class RobertaPreprocessor(AutoPreprocessor):
+class RobertPreprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(repo='readerbench/RoBERT-base',
                          *args, **kwargs)

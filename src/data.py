@@ -7,7 +7,7 @@ import numpy as np
 from transformers import BatchEncoding
 
 
-from preprocess import TextPreprocessor, BERTPreprocessor, RobertaPreprocessor, MT5Preprocessor
+from preprocess import TextPreprocessor, BERTPreprocessor, RobertPreprocessor, MT5Preprocessor
 
 
 class SexismDataset(Dataset):
@@ -71,3 +71,4 @@ class SexismDataset(Dataset):
         self.freq_count = torch.from_numpy(
             np.unique(self.classes, return_counts=True)[1])
         self.weights = 1 - self.freq_count / self.freq_count.sum()
+        self.class_to_freq = { i: (1. / w) for i, w in enumerate(self.freq_count) }
