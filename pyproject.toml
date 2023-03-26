@@ -33,6 +33,7 @@ torchmetrics = "^0.11.4"
 tokenizers = "^0.13.2"
 scikit-learn = "^1.2.2"
 protobuf = "^4.22.1"
+balanced-loss = "^0.1.0"
 
 [build-system]
 requires = ["poetry-core"]

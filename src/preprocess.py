@@ -24,11 +24,12 @@ class TextPreprocessor(ABC, Generic[PT]):
 
 
 class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
-    def __init__(self, repo: str, max_length: int = 64) -> None:
+    def __init__(self, repo: str, cased: bool = True, max_length: int = 64) -> None:
         super().__init__()
 
         # Initializer internals
         self.repo: str = repo
+        self.cased = cased
         self.tokenizer = AutoTokenizer.from_pretrained(self.repo)
         self.max_length: int = max_length
 
@@ -42,6 +43,9 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         dataset['text'] = dataset['text'].str.replace(URL_REGEX, ' ', regex=True)
         dataset['text'] = dataset['text'].str.replace(TWITTER_HANDLE_REGEX, ' ', regex=True)
         dataset['text'] = dataset['text'].str.replace(NUMBER_REGEX, ' ', regex=True)
+
+        if not self.cased:
+            dataset['text'] = dataset['text'].str.lower()
 
         # Manual preprocessing
         sentences: List[str] = []
@@ -80,6 +84,7 @@ class MT5Preprocessor(AutoPreprocessor):
 class RobertPreprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(repo='readerbench/RoBERT-base',
+                         cased=False,
                          *args, **kwargs)
 
 

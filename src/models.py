@@ -157,6 +157,7 @@ class RoBertFlatClassModel(PretrainedFlatClassModel):
 
     def create_layers(self) -> None:
         self.layers = nn.Sequential(
+            nn.Dropout(p=0.1),
             nn.Linear(in_features=768, out_features=self.n_classes)
         )
 
