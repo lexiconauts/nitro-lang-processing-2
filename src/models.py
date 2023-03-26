@@ -63,31 +63,34 @@ class MT5FlatClassModel(PretrainedFlatClassModel):
     def __init__(self, unfreeze: Literal['all'] | Literal['none'] | List[str] = 'none', *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.fc_head = torch.nn.Linear(40 * 768, 5)
+        self.fc_head = torch.nn.Linear(49152, 5)
         self.mt5: MT5Model = MT5EncoderModel.from_pretrained(
             "dumitrescustefan/mt5-base-romanian")
 
         self.unfreeze([
-            self.mt5.encoder.block[10].layer[0].SelfAttention.q.weight,
-            self.mt5.encoder.block[10].layer[0].SelfAttention.k.weight,
-            self.mt5.encoder.block[10].layer[0].SelfAttention.v.weight,
-            self.mt5.encoder.block[10].layer[0].SelfAttention.o.weight,
-            self.mt5.encoder.block[10].layer[0].layer_norm.weight,
-            self.mt5.encoder.block[10].layer[1].DenseReluDense.wi_0.weight,
-            self.mt5.encoder.block[10].layer[1].DenseReluDense.wi_1.weight,
-            self.mt5.encoder.block[10].layer[1].DenseReluDense.wo.weight,
-            self.mt5.encoder.block[10].layer[1].layer_norm.weight,
-            self.mt5.encoder.block[11].layer[0].SelfAttention.q.weight,
-            self.mt5.encoder.block[11].layer[0].SelfAttention.k.weight,
-            self.mt5.encoder.block[11].layer[0].SelfAttention.v.weight,
-            self.mt5.encoder.block[11].layer[0].SelfAttention.o.weight,
-            self.mt5.encoder.block[11].layer[0].layer_norm.weight,
-            self.mt5.encoder.block[11].layer[1].DenseReluDense.wi_0.weight,
-            self.mt5.encoder.block[11].layer[1].DenseReluDense.wi_1.weight,
-            self.mt5.encoder.block[11].layer[1].DenseReluDense.wo.weight,
-            self.mt5.encoder.block[11].layer[1].layer_norm.weight,
-            self.mt5.encoder.final_layer_norm.weight
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[10],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.block[11],
+            self.mt5.encoder.final_layer_norm
         ])
+
+    def create_layers(self) -> nn.Sequential:
+        pass
 
     def forward(self, x: Dict[str, Tensor]) -> Tensor:
         y = self.mt5(
