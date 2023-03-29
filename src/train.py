@@ -29,6 +29,7 @@ def train(model: nn.Module, optimizer: Optimizer, loss_fn: nn.Module, data_loade
             optimizer.zero_grad()
             loss: Tensor = loss_fn(y_pred, y_true)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             # Compute the accuracy

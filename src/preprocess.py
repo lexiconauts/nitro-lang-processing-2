@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from torch import Tensor
 from pandas import Series, DataFrame
-from transformers import AutoTokenizer, BatchEncoding, T5Tokenizer
+from transformers import AutoTokenizer, BatchEncoding
 import typing
 from typing import List, Set, Dict, TypeVar, Generic, Optional, Tuple
 
@@ -24,11 +24,12 @@ class TextPreprocessor(ABC, Generic[PT]):
 
 
 class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
-    def __init__(self, repo: str, max_length: int = 64) -> None:
+    def __init__(self, repo: str, cased: bool = True, max_length: int = 64) -> None:
         super().__init__()
 
         # Initializer internals
         self.repo: str = repo
+        self.cased = cased
         self.tokenizer = AutoTokenizer.from_pretrained(self.repo)
         self.max_length: int = max_length
 
@@ -39,9 +40,15 @@ class AutoPreprocessor(TextPreprocessor[BatchEncoding]):
         dataset = dataset.reset_index()
 
         # Remove twitter handles
-        dataset['text'] = dataset['text'].str.replace(URL_REGEX, ' ', regex=True)
-        dataset['text'] = dataset['text'].str.replace(TWITTER_HANDLE_REGEX, ' ', regex=True)
-        dataset['text'] = dataset['text'].str.replace(NUMBER_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            URL_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            TWITTER_HANDLE_REGEX, ' ', regex=True)
+        dataset['text'] = dataset['text'].str.replace(
+            NUMBER_REGEX, ' ', regex=True)
+
+        if not self.cased:
+            dataset['text'] = dataset['text'].str.lower()
 
         # Manual preprocessing
         sentences: List[str] = []
@@ -73,13 +80,14 @@ class BERTPreprocessor(AutoPreprocessor):
 
 class MT5Preprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(repo='dumitrescustefan/mt5-large-romanian',
+        super().__init__(repo='dumitrescustefan/mt5-base-romanian',
                          *args, **kwargs)
 
 
-class RobertaPreprocessor(AutoPreprocessor):
+class RobertPreprocessor(AutoPreprocessor):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(repo='readerbench/RoBERT-base',
+                         cased=False,
                          *args, **kwargs)
 
 
